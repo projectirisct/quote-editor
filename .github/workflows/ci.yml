@@ -57,6 +57,9 @@ jobs:
       #   options: --health-cmd "redis-cli ping" --health-interval 10s --health-timeout 5s --health-retries 5
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - name: Install packages
         run: sudo apt-get update && sudo apt-get install --no-install-recommends -y google-chrome-stable curl libjemalloc2 libvips postgresql-client
 
@@ -69,8 +72,6 @@ jobs:
         run: |
           corepack enable
           npm install
-      - name: Checkout code
-        uses: actions/checkout@v4
 
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
