@@ -68,11 +68,11 @@ jobs:
         with:
           node-version: '20'
       
-      - name: Install JavaScript dependencies
+      - name: Install and build assets
         run: |
           corepack enable
           npm install
-          npm run build
+          npm run build:all
 
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
