@@ -6,8 +6,8 @@ class CreateLineItemDates < ActiveRecord::Migration[7.2]
 
       t.timestamps
     end
-    
-    add_index :line_item_dates, [:quote_id, :date], unique: true
+
+    add_index :line_item_dates, [ :quote_id, :date ], unique: true
     add_index :line_item_dates, :date
   end
 end

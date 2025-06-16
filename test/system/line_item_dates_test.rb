@@ -16,7 +16,7 @@ class LineItemDatesTest < ApplicationSystemTestCase
 
     click_on "New date"
     fill_in "Date", with: Date.current + 1.day
-    
+
     click_on "Create date"
     assert_text I18n.l(Date.current + 1.day, format: :long)
   end

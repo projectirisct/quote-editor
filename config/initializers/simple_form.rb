@@ -6,7 +6,7 @@ SimpleForm.setup do |config|
       b.use :label, class: "visually-hidden"
       b.use :input, class: "form__input", error_class: "form__input--invalid"
     end
-  
+
     # Default configuration
     config.generate_additional_classes_for = []
     config.default_wrapper                 = :default

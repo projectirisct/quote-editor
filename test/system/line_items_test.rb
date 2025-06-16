@@ -35,31 +35,31 @@ class LineItemsTest < ApplicationSystemTestCase
 
     test "Updating a line item" do
         assert_selector "h1", text: "First quote"
-    
+
         within "##{dom_id(@line_item)}" do
           click_on "Edit"
         end
         assert_selector "h1", text: "First quote"
-    
+
         fill_in "Name", with: "Capybara article"
         fill_in "Unit price", with: 1234
         click_on "Update item"
-    
+
         assert_text "Capybara article"
         assert_text number_to_currency(1234)
 
         assert_text number_to_currency(@quote.total_price)
       end
-    
+
       test "Destroying a line item" do
         within "##{dom_id(@line_item_date)}" do
           assert_text @line_item.name
         end
-    
+
         within "##{dom_id(@line_item)}" do
           click_on "Delete"
         end
-    
+
         within "##{dom_id(@line_item_date)}" do
           assert_no_text @line_item.name
         end
