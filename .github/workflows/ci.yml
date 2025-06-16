@@ -68,10 +68,11 @@ jobs:
         with:
           node-version: '20'
       
-      - name: Install esbuild + JS deps
+      - name: Install JavaScript dependencies
         run: |
           corepack enable
           npm install
+          npm run build
 
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
