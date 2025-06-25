@@ -36,51 +36,80 @@ jobs:
       - name: Debug AWS Identity and Permissions
         run: |
           echo "=== AWS Identity Information ==="
-          aws sts get-caller-identity
+          aws sts get-caller-identity --output json
           echo ""
           
           echo "=== Testing AWS CLI Access ==="
           aws --version
           echo ""
 
-      - name: Test Elastic Beanstalk permissions
+      - name: Test all regions for applications
         run: |
-          echo "=== Testing Elastic Beanstalk API Access ==="
-          echo "Testing describe-applications..."
-          aws elasticbeanstalk describe-applications --region ap-southeast-1 --output json || echo "Failed to list applications"
-          echo ""
+          echo "=== Testing All Regions for Applications ==="
+          regions=("ap-southeast-1" "us-east-1" "us-west-2" "ap-southeast-2" "eu-west-1" "ap-northeast-1")
           
-          echo "Testing describe-environments..."
-          aws elasticbeanstalk describe-environments --region ap-southeast-1 --output json || echo "Failed to list environments"
-          echo ""
+          for region in "${regions[@]}"; do
+            echo "=== Region: $region ==="
+            echo "Applications:"
+            aws elasticbeanstalk describe-applications --region "$region" --output json | jq '.Applications | length' || echo "Failed to list applications in $region"
+            echo ""
+          done
+
+      - name: Test specific application in all regions
+        run: |
+          echo "=== Testing Specific Application in All Regions ==="
+          regions=("ap-southeast-1" "us-east-1" "us-west-2" "ap-southeast-2" "eu-west-1" "ap-northeast-1")
           
-          echo "Testing describe-platform-versions..."
-          aws elasticbeanstalk describe-platform-versions --region ap-southeast-1 --output json || echo "Failed to list platform versions"
+          for region in "${regions[@]}"; do
+            echo "=== Region: $region ==="
+            echo "Looking for 'quote-editor':"
+            aws elasticbeanstalk describe-applications \
+              --application-names quote-editor \
+              --region "$region" \
+              --output json 2>/dev/null | jq '.Applications[0].ApplicationName' || echo "Not found in $region"
+            echo ""
+          done
+
+      - name: Test different application name variations
+        run: |
+          echo "=== Testing Different Application Name Variations ==="
+          app_names=("quote-editor" "QuoteEditor" "quote_editor" "Quote-Editor" "quoteeditor" "QuoteEditorApp")
+          
+          for app_name in "${app_names[@]}"; do
+            echo "Testing: $app_name"
+            aws elasticbeanstalk describe-applications \
+              --application-names "$app_name" \
+              --region ap-southeast-1 \
+              --output json 2>/dev/null | jq '.Applications[0].ApplicationName' || echo "Not found: $app_name"
+          done
           echo ""
 
-      - name: Check IAM permissions
+      - name: Test basic Elastic Beanstalk API access
         run: |
-          echo "=== Checking IAM Permissions ==="
-          aws iam get-user --output json || echo "Cannot get user info"
+          echo "=== Testing Basic Elastic Beanstalk API Access ==="
+          echo "Testing describe-applications with full error output:"
+          aws elasticbeanstalk describe-applications --region ap-southeast-1 --output json 2>&1
           echo ""
           
-          echo "Testing specific application access..."
-          aws elasticbeanstalk describe-applications \
-            --application-names quote-editor \
-            --region ap-southeast-1 \
-            --output json || echo "Cannot access specific application"
+          echo "Testing describe-environments with full error output:"
+          aws elasticbeanstalk describe-environments --region ap-southeast-1 --output json 2>&1
           echo ""
 
-      - name: List all Elastic Beanstalk applications (detailed)
+      - name: Test S3 access
         run: |
-          echo "=== All Elastic Beanstalk Applications (Detailed) ==="
-          aws elasticbeanstalk describe-applications --region ap-southeast-1 --output table
+          echo "=== Testing S3 Access ==="
+          aws s3 ls --region ap-southeast-1
           echo ""
 
-      - name: List all Elastic Beanstalk environments (detailed)
+      - name: Check if we can access other AWS services
         run: |
-          echo "=== All Elastic Beanstalk Environments (Detailed) ==="
-          aws elasticbeanstalk describe-environments --region ap-southeast-1 --output table
+          echo "=== Testing Other AWS Services ==="
+          echo "EC2 instances:"
+          aws ec2 describe-instances --region ap-southeast-1 --output json | jq '.Reservations | length' || echo "Failed to list EC2 instances"
+          echo ""
+          
+          echo "S3 buckets:"
+          aws s3 ls --region ap-southeast-1 | wc -l || echo "Failed to list S3 buckets"
           echo ""
 
       - name: Log deployment parameters
