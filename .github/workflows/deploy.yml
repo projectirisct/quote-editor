@@ -52,13 +52,27 @@ jobs:
         run: |
           zip -r deploy.zip . -x "*.git*" "*.github*" "tmp/*" "log/*" "test/*" "spec/*" "node_modules/*"
 
-      - name: Deploy to Elastic Beanstalk
-        uses: einaregilsson/beanstalk-deploy@v21
-        with:
-          application_name: ${{ env.ELASTIC_BEANSTALK_APPLICATION_NAME }}
-          environment_name: ${{ env.ELASTIC_BEANSTALK_ENVIRONMENT_NAME }}
-          version_label: ${{ github.sha }}
-          region: ${{ env.AWS_REGION }}
-          deployment_package: deploy.zip
-          use_existing_version_if_available: true
-          wait_for_deployment: true
+      - name: Upload to S3
+        run: |
+          aws s3 cp deploy.zip s3://elasticbeanstalk-${{ env.AWS_REGION }}-${{ github.actor }}-${{ github.repository_owner }}-${{ github.repository_name }}/deploy.zip
+
+      - name: Create application version
+        run: |
+          aws elasticbeanstalk create-application-version \
+            --application-name ${{ env.ELASTIC_BEANSTALK_APPLICATION_NAME }} \
+            --version-label ${{ github.sha }} \
+            --source-bundle S3Bucket="elasticbeanstalk-${{ env.AWS_REGION }}-${{ github.actor }}-${{ github.repository_owner }}-${{ github.repository_name }}",S3Key="deploy.zip" \
+            --region ${{ env.AWS_REGION }}
+
+      - name: Deploy to environment
+        run: |
+          aws elasticbeanstalk update-environment \
+            --environment-name ${{ env.ELASTIC_BEANSTALK_ENVIRONMENT_NAME }} \
+            --version-label ${{ github.sha }} \
+            --region ${{ env.AWS_REGION }}
+
+      - name: Wait for deployment
+        run: |
+          aws elasticbeanstalk wait environment-updated \
+            --environment-names ${{ env.ELASTIC_BEANSTALK_ENVIRONMENT_NAME }} \
+            --region ${{ env.AWS_REGION }}
