@@ -65,10 +65,10 @@ jobs:
 
       - name: Create application version config
         run: |
-          cat > version-config.json << 'EOF'
+          cat > version-config.json << EOF
           {
             "ApplicationName": "quote-editor",
-            "VersionLabel": "deploy-test",
+            "VersionLabel": "${{ github.sha }}",
             "SourceBundle": {
               "S3Bucket": "quote-editor-deployments-ap-southeast-2",
               "S3Key": "deploy.zip"
