@@ -63,12 +63,20 @@ jobs:
         run: |
           aws s3 cp deploy.zip s3://quote-editor-deployments-ap-southeast-2/deploy.zip --region ap-southeast-2
 
+      - name: Generate unique version label
+        run: |
+          TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+          SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-8)
+          VERSION_LABEL="deploy-${TIMESTAMP}-${SHORT_SHA}"
+          echo "VERSION_LABEL=$VERSION_LABEL" >> $GITHUB_ENV
+          echo "Created version label: $VERSION_LABEL"
+
       - name: Create application version config
         run: |
           cat > version-config.json << EOF
           {
             "ApplicationName": "quote-editor",
-            "VersionLabel": "${{ github.sha }}",
+            "VersionLabel": "${{ env.VERSION_LABEL }}",
             "SourceBundle": {
               "S3Bucket": "quote-editor-deployments-ap-southeast-2",
               "S3Key": "deploy.zip"
@@ -86,7 +94,7 @@ jobs:
         run: |
           aws elasticbeanstalk update-environment \
             --environment-name Quote-editor-env \
-            --version-label ${{ github.sha }} \
+            --version-label "${{ env.VERSION_LABEL }}" \
             --region ap-southeast-2
 
       - name: Wait for deployment
