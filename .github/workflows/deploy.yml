@@ -33,6 +33,55 @@ jobs:
           role-to-assume: arn:aws:iam::796438783921:role/GithubActions-QuoteEditor-DeployRole
           aws-region: ${{ env.AWS_REGION }}
 
+      - name: Debug AWS Identity and Permissions
+        run: |
+          echo "=== AWS Identity Information ==="
+          aws sts get-caller-identity
+          echo ""
+          
+          echo "=== Testing AWS CLI Access ==="
+          aws --version
+          echo ""
+
+      - name: List all Elastic Beanstalk applications
+        run: |
+          echo "=== All Elastic Beanstalk Applications ==="
+          aws elasticbeanstalk describe-applications --region ap-southeast-1 --output table
+          echo ""
+
+      - name: List all Elastic Beanstalk environments
+        run: |
+          echo "=== All Elastic Beanstalk Environments ==="
+          aws elasticbeanstalk describe-environments --region ap-southeast-1 --output table
+          echo ""
+
+      - name: Check specific application details
+        run: |
+          echo "=== Checking for specific application: quote-editor ==="
+          aws elasticbeanstalk describe-applications \
+            --application-names quote-editor \
+            --region ap-southeast-1 \
+            --output table || echo "Application 'quote-editor' not found"
+          echo ""
+
+      - name: List available S3 buckets
+        run: |
+          echo "=== Available S3 Buckets ==="
+          aws s3 ls --region ap-southeast-1
+          echo ""
+
+      - name: Log deployment parameters
+        run: |
+          echo "=== Deployment Parameters ==="
+          echo "AWS Region: ${{ env.AWS_REGION }}"
+          echo "Application Name: ${{ env.ELASTIC_BEANSTALK_APPLICATION_NAME }}"
+          echo "Environment Name: ${{ env.ELASTIC_BEANSTALK_ENVIRONMENT_NAME }}"
+          echo "Platform: ${{ env.ELASTIC_BEANSTALK_PLATFORM }}"
+          echo "Platform Branch: ${{ env.ELASTIC_BEANSTALK_PLATFORM_BRANCH }}"
+          echo "Platform Version: ${{ env.ELASTIC_BEANSTALK_PLATFORM_VERSION }}"
+          echo "GitHub SHA: ${{ github.sha }}"
+          echo ""
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
