@@ -43,31 +43,44 @@ jobs:
           aws --version
           echo ""
 
-      - name: List all Elastic Beanstalk applications
+      - name: Test Elastic Beanstalk permissions
         run: |
-          echo "=== All Elastic Beanstalk Applications ==="
-          aws elasticbeanstalk describe-applications --region ap-southeast-1 --output table
+          echo "=== Testing Elastic Beanstalk API Access ==="
+          echo "Testing describe-applications..."
+          aws elasticbeanstalk describe-applications --region ap-southeast-1 --output json || echo "Failed to list applications"
+          echo ""
+          
+          echo "Testing describe-environments..."
+          aws elasticbeanstalk describe-environments --region ap-southeast-1 --output json || echo "Failed to list environments"
+          echo ""
+          
+          echo "Testing describe-platform-versions..."
+          aws elasticbeanstalk describe-platform-versions --region ap-southeast-1 --output json || echo "Failed to list platform versions"
           echo ""
 
-      - name: List all Elastic Beanstalk environments
+      - name: Check IAM permissions
         run: |
-          echo "=== All Elastic Beanstalk Environments ==="
-          aws elasticbeanstalk describe-environments --region ap-southeast-1 --output table
+          echo "=== Checking IAM Permissions ==="
+          aws iam get-user --output json || echo "Cannot get user info"
           echo ""
-
-      - name: Check specific application details
-        run: |
-          echo "=== Checking for specific application: quote-editor ==="
+          
+          echo "Testing specific application access..."
           aws elasticbeanstalk describe-applications \
             --application-names quote-editor \
             --region ap-southeast-1 \
-            --output table || echo "Application 'quote-editor' not found"
+            --output json || echo "Cannot access specific application"
           echo ""
 
-      - name: List available S3 buckets
+      - name: List all Elastic Beanstalk applications (detailed)
         run: |
-          echo "=== Available S3 Buckets ==="
-          aws s3 ls --region ap-southeast-1
+          echo "=== All Elastic Beanstalk Applications (Detailed) ==="
+          aws elasticbeanstalk describe-applications --region ap-southeast-1 --output table
+          echo ""
+
+      - name: List all Elastic Beanstalk environments (detailed)
+        run: |
+          echo "=== All Elastic Beanstalk Environments (Detailed) ==="
+          aws elasticbeanstalk describe-environments --region ap-southeast-1 --output table
           echo ""
 
       - name: Log deployment parameters
@@ -103,14 +116,6 @@ jobs:
       - name: Generate deployment package
         run: |
           zip -r deploy.zip . -x "*.git*" "*.github*" "tmp/*" "log/*" "test/*" "spec/*" "node_modules/*"
-
-      - name: Create S3 bucket
-        run: |
-          aws s3 mb s3://quote-editor-deployments --region ap-southeast-1
-
-      - name: Upload to S3
-        run: |
-          aws s3 cp deploy.zip s3://quote-editor-deployments/deploy.zip
 
       - name: Create application version config
         run: |
