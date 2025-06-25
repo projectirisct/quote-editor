@@ -1,0 +1,64 @@
+name: Deploy to AWS
+
+on:
+  push:
+    branches: [ main ]
+
+env:
+  AWS_REGION: ap-southeast-1
+  ELASTIC_BEANSTALK_APPLICATION_NAME: quote-editor
+  ELASTIC_BEANSTALK_ENVIRONMENT_NAME: Quote-editor-env
+  ELASTIC_BEANSTALK_PLATFORM: Ruby 3.4
+  ELASTIC_BEANSTALK_PLATFORM_BRANCH: ruby-3.4
+  ELASTIC_BEANSTALK_PLATFORM_VERSION: 4.5.2
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::796438783921:role/GithubActions-QuoteEditor-DeployRole
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install and build assets
+        run: |
+          corepack enable
+          npm install
+          npm run build:all
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: .ruby-version
+          bundler-cache: true
+
+      - name: Generate deployment package
+        run: |
+          zip -r deploy.zip . -x "*.git*" "*.github*" "tmp/*" "log/*" "test/*" "spec/*" "node_modules/*"
+
+      - name: Deploy to Elastic Beanstalk
+        uses: einaregilsson/beanstalk-deploy@v21
+        with:
+          application_name: ${{ env.ELASTIC_BEANSTALK_APPLICATION_NAME }}
+          environment_name: ${{ env.ELASTIC_BEANSTALK_ENVIRONMENT_NAME }}
+          version_label: ${{ github.sha }}
+          region: ${{ env.AWS_REGION }}
+          deployment_package: deploy.zip
+          use_existing_version_if_available: true
+          wait_for_deployment: true
