@@ -1,7 +1,9 @@
 name: Deploy to AWS
 
 on:
-  push:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
     branches: [ main ]
 
 env:
@@ -19,6 +21,7 @@ jobs:
     permissions:
       id-token: write
       contents: read
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
 
     steps:
       - name: Checkout code
@@ -52,27 +55,34 @@ jobs:
         run: |
           zip -r deploy.zip . -x "*.git*" "*.github*" "tmp/*" "log/*" "test/*" "spec/*" "node_modules/*"
 
-      - name: Upload to S3
+      - name: Create application version config
         run: |
-          aws s3 cp deploy.zip s3://elasticbeanstalk-${{ env.AWS_REGION }}-${{ github.actor }}-${{ github.repository_owner }}-${{ github.repository_name }}/deploy.zip
+          cat > version-config.json << 'EOF'
+          {
+            "ApplicationName": "quote-editor",
+            "VersionLabel": "deploy-test",
+            "SourceBundle": {
+              "S3Bucket": "local",
+              "S3Key": "deploy.zip"
+            }
+          }
+          EOF
 
       - name: Create application version
         run: |
           aws elasticbeanstalk create-application-version \
-            --application-name ${{ env.ELASTIC_BEANSTALK_APPLICATION_NAME }} \
-            --version-label ${{ github.sha }} \
-            --source-bundle S3Bucket="elasticbeanstalk-${{ env.AWS_REGION }}-${{ github.actor }}-${{ github.repository_owner }}-${{ github.repository_name }}",S3Key="deploy.zip" \
-            --region ${{ env.AWS_REGION }}
+            --cli-input-json file://version-config.json \
+            --region ap-southeast-1
 
       - name: Deploy to environment
         run: |
           aws elasticbeanstalk update-environment \
-            --environment-name ${{ env.ELASTIC_BEANSTALK_ENVIRONMENT_NAME }} \
+            --environment-name Quote-editor-env \
             --version-label ${{ github.sha }} \
-            --region ${{ env.AWS_REGION }}
+            --region ap-southeast-1
 
       - name: Wait for deployment
         run: |
           aws elasticbeanstalk wait environment-updated \
-            --environment-names ${{ env.ELASTIC_BEANSTALK_ENVIRONMENT_NAME }} \
-            --region ${{ env.AWS_REGION }}
+            --environment-names Quote-editor-env \
+            --region ap-southeast-1
