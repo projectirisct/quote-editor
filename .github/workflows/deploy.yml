@@ -7,7 +7,7 @@ on:
     branches: [ main ]
 
 env:
-  AWS_REGION: ap-southeast-1
+  AWS_REGION: ap-southeast-2
   ELASTIC_BEANSTALK_APPLICATION_NAME: quote-editor
   ELASTIC_BEANSTALK_ENVIRONMENT_NAME: Quote-editor-env
   ELASTIC_BEANSTALK_PLATFORM: Ruby 3.4
@@ -79,7 +79,7 @@ jobs:
             echo "Testing: $app_name"
             aws elasticbeanstalk describe-applications \
               --application-names "$app_name" \
-              --region ap-southeast-1 \
+              --region ap-southeast-2 \
               --output json 2>/dev/null | jq '.Applications[0].ApplicationName' || echo "Not found: $app_name"
           done
           echo ""
@@ -88,28 +88,28 @@ jobs:
         run: |
           echo "=== Testing Basic Elastic Beanstalk API Access ==="
           echo "Testing describe-applications with full error output:"
-          aws elasticbeanstalk describe-applications --region ap-southeast-1 --output json 2>&1
+          aws elasticbeanstalk describe-applications --region ap-southeast-2 --output json 2>&1
           echo ""
           
           echo "Testing describe-environments with full error output:"
-          aws elasticbeanstalk describe-environments --region ap-southeast-1 --output json 2>&1
+          aws elasticbeanstalk describe-environments --region ap-southeast-2 --output json 2>&1
           echo ""
 
       - name: Test S3 access
         run: |
           echo "=== Testing S3 Access ==="
-          aws s3 ls --region ap-southeast-1
+          aws s3 ls --region ap-southeast-2
           echo ""
 
       - name: Check if we can access other AWS services
         run: |
           echo "=== Testing Other AWS Services ==="
           echo "EC2 instances:"
-          aws ec2 describe-instances --region ap-southeast-1 --output json | jq '.Reservations | length' || echo "Failed to list EC2 instances"
+          aws ec2 describe-instances --region ap-southeast-2 --output json | jq '.Reservations | length' || echo "Failed to list EC2 instances"
           echo ""
           
           echo "S3 buckets:"
-          aws s3 ls --region ap-southeast-1 | wc -l || echo "Failed to list S3 buckets"
+          aws s3 ls --region ap-southeast-2 | wc -l || echo "Failed to list S3 buckets"
           echo ""
 
       - name: Log deployment parameters
@@ -163,17 +163,17 @@ jobs:
         run: |
           aws elasticbeanstalk create-application-version \
             --cli-input-json file://version-config.json \
-            --region ap-southeast-1
+            --region ap-southeast-2
 
       - name: Deploy to environment
         run: |
           aws elasticbeanstalk update-environment \
             --environment-name Quote-editor-env \
             --version-label ${{ github.sha }} \
-            --region ap-southeast-1
+            --region ap-southeast-2
 
       - name: Wait for deployment
         run: |
           aws elasticbeanstalk wait environment-updated \
             --environment-names Quote-editor-env \
-            --region ap-southeast-1
+            --region ap-southeast-2
